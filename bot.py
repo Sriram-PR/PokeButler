@@ -166,7 +166,7 @@ async def forward_shiny_to_archive(
             logger.warning(
                 f"Archive channel {guild_config.embed_channel_id} not found "
                 f"in {message.guild.name}",  # type: ignore
-                extra={"guild_id": message.guild.id},  # type: ignore
+                extra={"guild_id": message.guild.id},  # type: ignore # type: ignore
             )
             return
 
@@ -311,7 +311,7 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(
         name="shiny-channel",
-        description="Manage shiny monitoring channels for this server (Developer only)",
+        description="Manage shiny monitoring channels (Admin or Owner)",
     )
     @app_commands.describe(
         action="Action to perform",
@@ -325,7 +325,6 @@ class AdminCommands(commands.Cog):
             app_commands.Choice(name="clear", value="clear"),
         ]
     )
-    @app_commands.default_permissions(administrator=True)
     async def shiny_channel(
         self,
         interaction: discord.Interaction,
@@ -335,7 +334,7 @@ class AdminCommands(commands.Cog):
         """
         Manage channels to monitor for shiny Pokemon in this server.
 
-        Requires Administrator permissions.
+        Accessible to Server Administrators OR the Bot Owner.
         """
         if not interaction.guild:
             embed = create_error_embed(
@@ -432,7 +431,7 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(
         name="shiny-archive",
-        description="Manage shiny archive channel for this server (Developer only)",
+        description="Manage shiny archive channel (Admin or Owner)",
     )
     @app_commands.describe(
         action="Action to perform",
@@ -445,7 +444,6 @@ class AdminCommands(commands.Cog):
             app_commands.Choice(name="show", value="show"),
         ]
     )
-    @app_commands.default_permissions(administrator=True)
     async def shiny_archive(
         self,
         interaction: discord.Interaction,
@@ -455,7 +453,7 @@ class AdminCommands(commands.Cog):
         """
         Manage archive channel where shiny embeds are forwarded in this server.
 
-        Requires Administrator permissions.
+        Accessible to Server Administrators OR the Bot Owner.
         """
         if not interaction.guild:
             embed = create_error_embed(
