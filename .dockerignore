@@ -1,0 +1,29 @@
+# Ignore git history
+.git
+.gitignore
+
+# Ignore python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Ignore virtual environments (CRITICAL)
+venv/
+env/
+.env
+
+# Ignore local configuration/data
+.env.local
+.env.production
+data/
+bot.log
+
+# Ignore testing/IDEs
+.pytest_cache/
+.coverage
+htmlcov/
+.vscode/
+.idea/

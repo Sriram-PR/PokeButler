@@ -1,0 +1,10 @@
+services:
+  smogon-bot:
+    build: .
+    container_name: smogon_bot
+    restart: unless-stopped
+    volumes:
+      # Maps the 'smogon-data' directory on the VM to '/app/data' in the container
+      - ./smogon-data:/app/data
+    env_file:
+      - .env
