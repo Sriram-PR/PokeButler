@@ -104,17 +104,20 @@ class Database:
         """Create database tables and indexes if they don't exist."""
         async with self._lock:
             # Guild configurations
-            await self._conn.execute("""
+            await self._conn.execute(  # type: ignore
+                """
                 CREATE TABLE IF NOT EXISTS guild_configs (
                     guild_id INTEGER PRIMARY KEY,
                     channels TEXT NOT NULL,
                     archive_channel_id INTEGER,
                     updated_at REAL NOT NULL
                 )
-            """)
+            """
+            )
 
             # API cache with size management
-            await self._conn.execute("""
+            await self._conn.execute(  # type: ignore
+                """
                 CREATE TABLE IF NOT EXISTS api_cache (
                     cache_key TEXT PRIMARY KEY,
                     data TEXT NOT NULL,
@@ -122,15 +125,18 @@ class Database:
                     last_accessed REAL NOT NULL,
                     access_count INTEGER DEFAULT 1
                 )
-            """)
+            """
+            )
 
             # Index for cache cleanup
-            await self._conn.execute("""
+            await self._conn.execute(  # type: ignore
+                """
                 CREATE INDEX IF NOT EXISTS idx_cache_access 
                 ON api_cache(last_accessed)
-            """)
+            """
+            )
 
-            await self._conn.commit()
+            await self._conn.commit()  # type: ignore
             logger.info("Database tables initialized")
 
     # ==================== GUILD CONFIGURATIONS ====================
@@ -154,7 +160,7 @@ class Database:
                 channels_json = json.dumps(list(channels))
                 current_time = time.time()
 
-                await self._conn.execute(
+                await self._conn.execute(  # type: ignore
                     """
                     INSERT INTO guild_configs (guild_id, channels, archive_channel_id, updated_at)
                     VALUES (?, ?, ?, ?)
@@ -165,7 +171,7 @@ class Database:
                     """,
                     (guild_id, channels_json, archive_channel_id, current_time),
                 )
-                await self._conn.commit()
+                await self._conn.commit()  # type: ignore
 
                 logger.debug(f"Saved guild config for {guild_id}")
                 return True
@@ -189,7 +195,7 @@ class Database:
         """
         try:
             async with self._lock:
-                cursor = await self._conn.execute(
+                cursor = await self._conn.execute(  # type: ignore
                     "SELECT channels, archive_channel_id FROM guild_configs WHERE guild_id = ?",
                     (guild_id,),
                 )
@@ -215,7 +221,7 @@ class Database:
         """
         try:
             async with self._lock:
-                cursor = await self._conn.execute(
+                cursor = await self._conn.execute(  # type: ignore
                     "SELECT guild_id, channels, archive_channel_id FROM guild_configs"
                 )
                 rows = await cursor.fetchall()
@@ -246,10 +252,10 @@ class Database:
         """
         try:
             async with self._lock:
-                await self._conn.execute(
+                await self._conn.execute(  # type: ignore
                     "DELETE FROM guild_configs WHERE guild_id = ?", (guild_id,)
                 )
-                await self._conn.commit()
+                await self._conn.commit()  # type: ignore
                 logger.info(f"Deleted guild config for {guild_id}")
                 return True
 
@@ -277,7 +283,7 @@ class Database:
             async with self._lock:
                 current_time = time.time()
 
-                cursor = await self._conn.execute(
+                cursor = await self._conn.execute(  # type: ignore
                     "SELECT data, created_at FROM api_cache WHERE cache_key = ?",
                     (cache_key,),
                 )
@@ -289,7 +295,7 @@ class Database:
 
                     if age < max_age:
                         # Update last accessed time and access count
-                        await self._conn.execute(
+                        await self._conn.execute(  # type: ignore
                             """
                             UPDATE api_cache 
                             SET last_accessed = ?, access_count = access_count + 1
@@ -297,17 +303,17 @@ class Database:
                             """,
                             (current_time, cache_key),
                         )
-                        await self._conn.commit()
+                        await self._conn.commit()  # type: ignore
 
                         data = json.loads(row["data"])
                         logger.debug(f"Cache hit: {cache_key[:50]}...")
                         return data
                     else:
                         # Expired - delete it
-                        await self._conn.execute(
+                        await self._conn.execute(  # type: ignore
                             "DELETE FROM api_cache WHERE cache_key = ?", (cache_key,)
                         )
-                        await self._conn.commit()
+                        await self._conn.commit()  # type: ignore
                         logger.debug(f"Cache expired: {cache_key[:50]}...")
 
                 return None
@@ -336,17 +342,17 @@ class Database:
                 current_time = time.time()
 
                 # Check current cache size
-                cursor = await self._conn.execute(
+                cursor = await self._conn.execute(  # type: ignore
                     "SELECT COUNT(*) as count FROM api_cache"
                 )
                 row = await cursor.fetchone()
-                cache_size = row["count"]
+                cache_size = row["count"]  # type: ignore
 
                 # If at max size, remove least recently accessed entries
                 if cache_size >= max_size:
                     # Remove 10% of oldest entries to avoid constant deletions
                     remove_count = max(1, max_size // 10)
-                    await self._conn.execute(
+                    await self._conn.execute(  # type: ignore
                         """
                         DELETE FROM api_cache WHERE cache_key IN (
                             SELECT cache_key FROM api_cache 
@@ -360,7 +366,7 @@ class Database:
 
                 # Insert or replace cache entry
                 data_json = json.dumps(data)
-                await self._conn.execute(
+                await self._conn.execute(  # type: ignore
                     """
                     INSERT INTO api_cache (cache_key, data, created_at, last_accessed)
                     VALUES (?, ?, ?, ?)
@@ -371,7 +377,7 @@ class Database:
                     """,
                     (cache_key, data_json, current_time, current_time),
                 )
-                await self._conn.commit()
+                await self._conn.commit()  # type: ignore
 
                 logger.debug(f"Cached: {cache_key[:50]}...")
                 return True
@@ -389,8 +395,8 @@ class Database:
         """
         try:
             async with self._lock:
-                await self._conn.execute("DELETE FROM api_cache")
-                await self._conn.commit()
+                await self._conn.execute("DELETE FROM api_cache")  # type: ignore
+                await self._conn.commit()  # type: ignore
                 logger.info("Cache cleared")
                 return True
 
@@ -407,19 +413,21 @@ class Database:
         """
         try:
             async with self._lock:
-                cursor = await self._conn.execute("""
+                cursor = await self._conn.execute(  # type: ignore
+                    """
                     SELECT 
                         COUNT(*) as size,
                         SUM(access_count) as total_accesses,
                         AVG(access_count) as avg_accesses
                     FROM api_cache
-                """)
+                """
+                )
                 row = await cursor.fetchone()
 
                 return {
-                    "size": row["size"],
-                    "total_accesses": row["total_accesses"] or 0,
-                    "avg_accesses": round(row["avg_accesses"] or 0, 1),
+                    "size": row["size"],  # type: ignore
+                    "total_accesses": row["total_accesses"] or 0,  # type: ignore
+                    "avg_accesses": round(row["avg_accesses"] or 0, 1),  # type: ignore
                 }
 
         except Exception as e:
@@ -441,14 +449,14 @@ class Database:
                 current_time = time.time()
                 cutoff_time = current_time - max_age
 
-                cursor = await self._conn.execute(
+                cursor = await self._conn.execute(  # type: ignore
                     "DELETE FROM api_cache WHERE created_at < ? RETURNING cache_key",
                     (cutoff_time,),
                 )
                 deleted_rows = await cursor.fetchall()
-                deleted_count = len(deleted_rows)
+                deleted_count = len(deleted_rows)  # type: ignore
 
-                await self._conn.commit()
+                await self._conn.commit()  # type: ignore
 
                 if deleted_count > 0:
                     logger.debug(f"Cleaned {deleted_count} expired cache entries")
@@ -470,7 +478,7 @@ class Database:
         """
         try:
             async with self._lock:
-                await self._conn.execute("VACUUM")
+                await self._conn.execute("VACUUM")  # type: ignore
                 logger.info("Database vacuumed")
         except Exception as e:
             logger.error(f"Error vacuuming database: {e}", exc_info=True)
@@ -478,6 +486,8 @@ class Database:
 
 # Global database instance
 _db_instance: Optional[Database] = None
+# Lock for thread-safe initialization
+_db_init_lock = asyncio.Lock()
 
 
 async def get_database() -> Database:
@@ -485,14 +495,22 @@ async def get_database() -> Database:
     Get global database instance (Singleton pattern).
 
     Initializes and connects if not already connected.
+    Uses double-checked locking to prevent race conditions during startup.
 
     Returns:
         The connected Database instance.
     """
     global _db_instance
+
     if _db_instance is None:
-        _db_instance = Database()
-        await _db_instance.connect()
+        async with _db_init_lock:
+            # Check again inside lock to ensure another task didn't init while we waited
+            if _db_instance is None:
+                instance = Database()
+                await instance.connect()
+                # Only assign to global variable AFTER connection is fully established
+                _db_instance = instance
+
     return _db_instance
 
 
